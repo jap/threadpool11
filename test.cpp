@@ -12,18 +12,20 @@
 
 
 
-fifo<int> f1(50000), f2(40000);
+fifo<int, 32*4096> f1, f2;
 
-const int N(1680000);
-const int num_readers(2);
-const int num_pushers(2);
-const int num_writers(2);
+const int N(1680000*30);
+const int num_readers(15);
+const int num_pushers(15);
+const int num_writers(15);
 
 std::mutex io_mutex;
 
 int sleep_some()
 {
     static __thread int slept;
+    return ++slept;
+
     static const std::chrono::milliseconds du(1);
     std::this_thread::sleep_for(du);
     return ++slept;
@@ -31,7 +33,10 @@ int sleep_some()
 
 void reader(const int k) {
     int z;
-    //std::cout << "r+";
+    {
+      std::unique_lock<std::mutex> iolock(io_mutex);
+      std::cout << "r+";
+    }
     for (int p=0; p<(N/k); ++p) {
         while(!f2.pop(z))
             sleep_some();
@@ -41,25 +46,31 @@ void reader(const int k) {
         } */
 
     }
-    //std::unique_lock<std::mutex> iolock(io_mutex);
-    //std::cout << "r-" << z << " " << (sleep_some()-1) << std::endl;
+    std::unique_lock<std::mutex> iolock(io_mutex);
+    std::cout << "r-" << z << " " << (sleep_some()-1) << std::endl;
 }
 
 void pusher(const int k) {
     int z;
-    //std::cout << "p+" << std::endl;
+    {
+      std::unique_lock<std::mutex> iolock(io_mutex);
+      std::cout << "p+" << std::endl;
+    }
     for (int p=0; p<(N/k); ++p) {
         while (!f1.pop(z))
             sleep_some();
         while (!f2.push(z))
             sleep_some();
     }
-    //std::unique_lock<std::mutex> iolock(io_mutex);
-    //std::cout << "p-" << " " << (sleep_some()-1) << std::endl;
+    std::unique_lock<std::mutex> iolock(io_mutex);
+    std::cout << "p-" << " " << (sleep_some()-1) << std::endl;
 }
 
 void writer(const int k) {
-    std::cout << "w+" << std::endl;
+    {
+      std::unique_lock<std::mutex> iolock(io_mutex);
+      std::cout << "w+" << std::endl;
+    }
     for (int p=0; p<(N/k); ++p) {
         while (!f1.push(p))
             sleep_some();
@@ -68,8 +79,8 @@ void writer(const int k) {
             std::cout <<"wrote " << p << std::endl;
         } */
     }
-    //std::unique_lock<std::mutex> iolock(io_mutex);
-    //std::cout << "w-" << " " << (sleep_some()-1) << std::endl;
+    std::unique_lock<std::mutex> iolock(io_mutex);
+    std::cout << "w-" << " " << (sleep_some()-1) << std::endl;
 }
 
 int main()

@@ -1,3 +1,8 @@
+/* (c) 2013-2014 Jasper Spaans <j@jasper.es>
+ *
+ * Just use it and be happy. No warranty from my side.
+ */
+
 #ifndef __THREADPOOL11_HH__
 #define __THREADPOOL11_HH__
 
@@ -16,12 +21,11 @@
  *  if the buffer is full, add_wrap(writer_pos) == reader_pos
  */
 
-
-template<typename T, typename size_type=uint32_t>
+typedef uint32_t size_type;
+template<typename T, const size_type p_size=512>
 class fifo
 {
 private:
-    const size_type m_size;
     std::atomic<size_type> pos_read, pos_reader;
     std::atomic<size_type> pos_written, pos_writer;
 
@@ -29,16 +33,15 @@ private:
     aT *fifo_buffer;
 
     inline size_type add_wrap(const size_type p) {
-        return (p+1)%m_size;
+        return (p+1)%p_size;
     }
 
 public:
-    fifo(const size_type size):
-        m_size(size + 1),
+    fifo():
         pos_read(0), pos_reader(0),
         pos_written(0), pos_writer(0)
     {
-        fifo_buffer = new aT[m_size];
+        fifo_buffer = new aT[p_size];
     }
 
     ~fifo()
@@ -46,7 +49,7 @@ public:
         delete[] fifo_buffer;
     }
 
-    size_type size() const { return m_size; }
+    size_type size() const { return p_size; }
 
     bool push(const T &element)
     {
@@ -66,12 +69,10 @@ public:
 
             // update the "written" pointer by incrementing it;
             // this unfortunately cannot be done using a normal
-            // increment because we use a ringbuffer
-            size_type written = to_write;
-            while (!pos_written.compare_exchange_weak(written,
-                                                      add_wrap(written))) {
-                written = to_write;
-            }
+            // increment because we use a ringbuffer.
+            for (size_type written = pos_written;
+                 !pos_written.compare_exchange_weak(written, add_wrap(written));
+                 written = pos_written);
             return true;
         }
     }
@@ -95,11 +96,9 @@ public:
             // update the "read" pointer by incrementing it;
             // this unfortunately cannot be done using a normal
             // increment because we use a ringbuffer
-            size_type read = to_read;
-            while (!pos_read.compare_exchange_weak(read,
-                                                   add_wrap(read))) {
-                read = to_read;
-            }
+            for (size_type read = pos_read;
+                 !pos_read.compare_exchange_weak(read, add_wrap(read));
+                 read = pos_read);
             return true;
         }
     }
