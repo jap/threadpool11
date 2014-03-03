@@ -1,6 +1,12 @@
-/* (c) 2013-2014 Jasper Spaans <j@jasper.es>
+/*
+ * (c) 2013-2014 Jasper Spaans <j@jasper.es>
  *
- * Just use it and be happy. No warranty from my side.
+ *  This library is free software. It comes without any warranty, to
+ *  the extent permitted by applicable law. You can redistribute it
+ *  and/or modify it under the terms of the Do What the Fuck You Want
+ *  to Public License, Version 2, as published by Sam Hocevar. See
+ *  http://www.wtfpl.net/ for more details.
+ *
  */
 
 #ifndef __THREADPOOL11_HH__
