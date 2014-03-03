@@ -71,7 +71,8 @@ public:
                 // someone else is writing... retry
                 continue;
             }
-            fifo_buffer[to_write] = element;
+            //fifo_buffer[to_write] = element;  // yields a warning on gcc 4.4.5
+            atomic_store(fifo_buffer+to_write, element);
 
             // update the "written" pointer by incrementing it;
             // this unfortunately cannot be done using a normal
